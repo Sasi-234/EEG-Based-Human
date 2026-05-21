@@ -1,0 +1,61 @@
+# Docker Compose configuration for EEG Emotion Recognition System
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: eeg_emotion_web
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app
+      - media_volume:/app/media
+      - static_volume:/app/static
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - SECRET_KEY=your-secret-key-here
+      - DATABASE_URL=sqlite:///db.sqlite3
+    depends_on:
+      - db
+    networks:
+      - eeg_network
+
+  db:
+    image: postgres:15
+    container_name: eeg_emotion_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=eeg_emotion_db
+      - POSTGRES_USER=eeg_user
+      - POSTGRES_PASSWORD=eeg_password
+    ports:
+      - "5432:5432"
+    networks:
+      - eeg_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: eeg_emotion_nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - static_volume:/app/static
+      - media_volume:/app/media
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+    networks:
+      - eeg_network
+
+volumes:
+  postgres_data:
+  media_volume:
+  static_volume:
+
+networks:
+  eeg_network:
+    driver: bridge
+
+# Made with Bob
