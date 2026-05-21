@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - EEG Emotion Recognition{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <h1 class="h3 mb-0 text-gray-800">
+            <i class="fas fa-tachometer-alt"></i> Dashboard
+        </h1>
+        <p class="text-muted">Welcome back, {{ user.get_full_name|default:user.username }}!</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Uploads
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_uploads }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-file-upload fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Total Predictions
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_predictions }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Account Status
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">Active</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Member Since
+                        </div>
+                        <div class="h6 mb-0 font-weight-bold text-gray-800">{{ user.date_joined|date:"M Y" }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-calendar fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-lg-12">
+        <div class="card shadow">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <a href="#" class="btn btn-primary btn-lg w-100">
+                            <i class="fas fa-upload fa-2x mb-2"></i><br>
+                            Upload EEG File
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="#" class="btn btn-success btn-lg w-100">
+                            <i class="fas fa-history fa-2x mb-2"></i><br>
+                            View History
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="{% url 'profile' %}" class="btn btn-info btn-lg w-100">
+                            <i class="fas fa-user-edit fa-2x mb-2"></i><br>
+                            Edit Profile
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <a href="#" class="btn btn-warning btn-lg w-100">
+                            <i class="fas fa-lightbulb fa-2x mb-2"></i><br>
+                            Recommendations
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold text-primary">Recent Uploads</h6>
+            </div>
+            <div class="card-body">
+                {% if recent_uploads %}
+                    <div class="list-group">
+                        {% for upload in recent_uploads %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ upload.file_name }}</h6>
+                                    <small class="text-muted">{{ upload.upload_date|timesince }} ago</small>
+                                </div>
+                                <p class="mb-1">
+                                    <span class="badge bg-{{ upload.status|yesno:'success,warning,danger' }}">
+                                        {{ upload.get_status_display }}
+                                    </span>
+                                </p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-4">
+                        <i class="fas fa-inbox fa-3x mb-3"></i><br>
+                        No uploads yet. Start by uploading your first EEG file!
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold text-primary">Recent Predictions</h6>
+            </div>
+            <div class="card-body">
+                {% if recent_predictions %}
+                    <div class="list-group">
+                        {% for prediction in recent_predictions %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">
+                                        <span class="emotion-badge emotion-{{ prediction.predicted_emotion }}">
+                                            {{ prediction.get_predicted_emotion_display }}
+                                        </span>
+                                    </h6>
+                                    <small class="text-muted">{{ prediction.prediction_date|timesince }} ago</small>
+                                </div>
+                                <p class="mb-1">
+                                    Confidence: <strong>{{ prediction.confidence_percentage|floatformat:1 }}%</strong>
+                                    | Model: {{ prediction.get_model_used_display }}
+                                </p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-4">
+                        <i class="fas fa-chart-line fa-3x mb-3"></i><br>
+                        No predictions yet. Upload an EEG file to get started!
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Emotion Distribution Chart -->
+{% if emotion_distribution %}
+<div class="row">
+    <div class="col-lg-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold text-primary">Emotion Distribution</h6>
+            </div>
+            <div class="card-body">
+                <canvas id="emotionChart" height="80"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if emotion_distribution %}
+<script>
+    // Emotion Distribution Chart
+    const ctx = document.getElementById('emotionChart').getContext('2d');
+    const emotionChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [{% for item in emotion_distribution %}'{{ item.predicted_emotion|title }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Number of Predictions',
+                data: [{% for item in emotion_distribution %}{{ item.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: [
+                    'rgba(255, 215, 0, 0.7)',
+                    'rgba(65, 105, 225, 0.7)',
+                    'rgba(220, 20, 60, 0.7)',
+                    'rgba(144, 238, 144, 0.7)',
+                    'rgba(255, 99, 71, 0.7)',
+                    'rgba(255, 105, 180, 0.7)'
+                ],
+                borderColor: [
+                    'rgba(255, 215, 0, 1)',
+                    'rgba(65, 105, 225, 1)',
+                    'rgba(220, 20, 60, 1)',
+                    'rgba(144, 238, 144, 1)',
+                    'rgba(255, 99, 71, 1)',
+                    'rgba(255, 105, 180, 1)'
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

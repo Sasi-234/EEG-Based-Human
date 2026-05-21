@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Emotion Predictions - EEG Emotion Recognition{% endblock %}
+
+{% block extra_css %}
+<style>
+    .prediction-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    
+    .prediction-item {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+    
+    .prediction-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    }
+    
+    .emotion-header {
+        padding: 20px;
+        text-align: center;
+        color: white;
+        font-weight: bold;
+        font-size: 1.2rem;
+    }
+    
+    .filter-pills {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+    
+    .filter-pill {
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 2px solid #dee2e6;
+        background-color: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .filter-pill:hover {
+        border-color: #007bff;
+        background-color: #e7f3ff;
+    }
+    
+    .filter-pill.active {
+        background-color: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-brain"></i> Emotion Predictions</h2>
+        <a href="{% url 'eeg_upload' %}" class="btn btn-primary">
+            <i class="fas fa-upload"></i> Upload New File
+        </a>
+    </div>
+    
+    <!-- Filter Pills -->
+    <div class="filter-pills">
+        <a href="{% url 'prediction_list' %}" 
+           class="filter-pill {% if not emotion_filter %}active{% endif %}">
+            All Emotions
+        </a>
+        {% for emotion_code, emotion_name in emotion_choices %}
+            <a href="?emotion={{ emotion_code }}" 
+               class="filter-pill {% if emotion_filter == emotion_code %}active{% endif %}">
+                {{ emotion_name }}
+            </a>
+        {% endfor %}
+    </div>
+    
+    <!-- Predictions Grid -->
+    {% if page_obj %}
+        <div class="prediction-grid">
+            {% for prediction in page_obj %}
+                <div class="card prediction-item shadow-sm">
+                    <div class="emotion-header emotion-bg-{{ prediction.predicted_emotion }}">
+                        {{ prediction.get_predicted_emotion_display }}
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <small class="text-muted">Confidence Score</small>
+                            <div class="progress" style="height: 20px;">
+                                <div class="progress-bar bg-success" 
+                                     role="progressbar" 
+                                     style="width: {{ prediction.confidence_score }}%">
+                                    {{ prediction.confidence_score }}%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        {% if prediction.valence or prediction.arousal %}
+                            <div class="row mb-3">
+                                {% if prediction.valence %}
+                                    <div class="col-6">
+                                        <small class="text-muted">Valence</small>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-info" 
+                                                 style="width: {{ prediction.valence }}%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                                {% if prediction.arousal %}
+                                    <div class="col-6">
+                                        <small class="text-muted">Arousal</small>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-warning" 
+                                                 style="width: {{ prediction.arousal }}%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-calendar"></i> 
+                                {{ prediction.prediction_date|date:"M d, Y H:i" }}
+                            </small>
+                        </div>
+                        
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-file"></i> 
+                                {{ prediction.upload.file_name|truncatechars:25 }}
+                            </small>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <a href="{% url 'prediction_detail' prediction.id %}" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i> View Details
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if page_obj.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1{% if emotion_filter %}&emotion={{ emotion_filter }}{% endif %}">
+                                <i class="fas fa-angle-double-left"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if emotion_filter %}&emotion={{ emotion_filter }}{% endif %}">
+                                <i class="fas fa-angle-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if emotion_filter %}&emotion={{ emotion_filter }}{% endif %}">
+                                    {{ num }}
+                                </a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if emotion_filter %}&emotion={{ emotion_filter }}{% endif %}">
+                                <i class="fas fa-angle-right"></i>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if emotion_filter %}&emotion={{ emotion_filter }}{% endif %}">
+                                <i class="fas fa-angle-double-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-brain fa-4x text-muted mb-3"></i>
+                <h4>No Predictions Yet</h4>
+                <p class="text-muted">Upload an EEG file to get emotion predictions</p>
+                <a href="{% url 'eeg_upload' %}" class="btn btn-primary">
+                    <i class="fas fa-upload"></i> Upload EEG File
+                </a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

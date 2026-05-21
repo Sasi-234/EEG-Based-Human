@@ -1,0 +1,261 @@
+{% extends 'base.html' %}
+
+{% block title %}Home - EEG Emotion Recognition{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<div class="row mb-5">
+    <div class="col-lg-12">
+        <div class="card border-0 shadow-lg">
+            <div class="card-body p-5 text-center">
+                <h1 class="display-4 mb-4">
+                    <i class="fas fa-brain text-primary"></i>
+                    EEG-Based Emotion Recognition
+                </h1>
+                <p class="lead text-muted mb-4">
+                    Advanced AI-powered system for detecting human emotions using EEG brainwave signals
+                </p>
+                {% if not user.is_authenticated %}
+                    <div class="mt-4">
+                        <a href="{% url 'register' %}" class="btn btn-primary btn-lg me-3">
+                            <i class="fas fa-user-plus"></i> Get Started
+                        </a>
+                        <a href="{% url 'about' %}" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-info-circle"></i> Learn More
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="mt-4">
+                        <a href="{% url 'dashboard' %}" class="btn btn-primary btn-lg">
+                            <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Section -->
+<div class="row mb-5">
+    <div class="col-md-4 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Users
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_users }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Total Predictions
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_predictions }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-line fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            EEG Files Processed
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">{{ total_uploads }}</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-file-upload fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Features Section -->
+<div class="row mb-5">
+    <div class="col-lg-12">
+        <h2 class="text-center mb-4">Key Features</h2>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <div class="mb-3">
+                    <i class="fas fa-brain fa-3x text-primary"></i>
+                </div>
+                <h5 class="card-title">Advanced AI Models</h5>
+                <p class="card-text">
+                    Utilizes state-of-the-art CNN and LSTM deep learning models for accurate emotion detection.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <div class="mb-3">
+                    <i class="fas fa-chart-bar fa-3x text-success"></i>
+                </div>
+                <h5 class="card-title">Real-time Analysis</h5>
+                <p class="card-text">
+                    Process EEG signals and get emotion predictions in real-time with high accuracy.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4 mb-4">
+        <div class="card h-100 text-center">
+            <div class="card-body">
+                <div class="mb-3">
+                    <i class="fas fa-lightbulb fa-3x text-warning"></i>
+                </div>
+                <h5 class="card-title">Smart Recommendations</h5>
+                <p class="card-text">
+                    Receive personalized recommendations based on detected emotions for better mental health.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Emotions Section -->
+<div class="row mb-5">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-smile"></i> Detectable Emotions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-2 mb-3">
+                        <div class="emotion-badge emotion-happy">
+                            <i class="fas fa-smile"></i> Happy
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="emotion-badge emotion-sad">
+                            <i class="fas fa-sad-tear"></i> Sad
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="emotion-badge emotion-angry">
+                            <i class="fas fa-angry"></i> Angry
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="emotion-badge emotion-relaxed">
+                            <i class="fas fa-spa"></i> Relaxed
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="emotion-badge emotion-stressed">
+                            <i class="fas fa-exclamation-triangle"></i> Stressed
+                        </div>
+                    </div>
+                    <div class="col-md-2 mb-3">
+                        <div class="emotion-badge emotion-excited">
+                            <i class="fas fa-star"></i> Excited
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- How It Works Section -->
+<div class="row mb-5">
+    <div class="col-lg-12">
+        <h2 class="text-center mb-4">How It Works</h2>
+    </div>
+    
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <span class="badge bg-primary rounded-circle p-3" style="font-size: 1.5rem;">1</span>
+                </div>
+                <h5 class="card-title">Upload EEG Data</h5>
+                <p class="card-text">Upload your EEG signal files in supported formats (CSV, DAT, EDF, BDF).</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <span class="badge bg-success rounded-circle p-3" style="font-size: 1.5rem;">2</span>
+                </div>
+                <h5 class="card-title">Signal Processing</h5>
+                <p class="card-text">Advanced preprocessing removes noise and extracts relevant features.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <span class="badge bg-info rounded-circle p-3" style="font-size: 1.5rem;">3</span>
+                </div>
+                <h5 class="card-title">AI Analysis</h5>
+                <p class="card-text">Deep learning models analyze patterns to detect emotions accurately.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-4">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <span class="badge bg-warning rounded-circle p-3" style="font-size: 1.5rem;">4</span>
+                </div>
+                <h5 class="card-title">Get Results</h5>
+                <p class="card-text">View detailed emotion analysis and receive personalized recommendations.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CTA Section -->
+{% if not user.is_authenticated %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center p-5">
+                <h3 class="mb-3">Ready to Get Started?</h3>
+                <p class="lead mb-4">Join us today and start analyzing emotions with cutting-edge AI technology.</p>
+                <a href="{% url 'register' %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-user-plus"></i> Create Free Account
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

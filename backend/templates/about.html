@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %}About - EEG Emotion Recognition{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card shadow-lg mb-4">
+            <div class="card-body p-5">
+                <h1 class="mb-4"><i class="fas fa-info-circle text-primary"></i> About the Project</h1>
+                
+                <h3 class="mt-4">Overview</h3>
+                <p class="lead">
+                    The EEG-Based Human Emotion Recognition System is an advanced AI-powered application designed to detect and analyze human emotions using electroencephalogram (EEG) brainwave signals.
+                </p>
+
+                <h3 class="mt-4">Technology Stack</h3>
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-code text-primary"></i> Frontend</h5>
+                        <ul>
+                            <li>HTML5, CSS3, JavaScript</li>
+                            <li>Bootstrap 5</li>
+                            <li>Chart.js for visualizations</li>
+                            <li>jQuery</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-server text-success"></i> Backend</h5>
+                        <ul>
+                            <li>Python 3.8+</li>
+                            <li>Django 4.2</li>
+                            <li>Django REST Framework</li>
+                            <li>SQLite Database</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-brain text-info"></i> AI/ML</h5>
+                        <ul>
+                            <li>TensorFlow 2.15</li>
+                            <li>Keras</li>
+                            <li>CNN & LSTM Models</li>
+                            <li>NumPy, Pandas, Scikit-learn</li>
+                            <li>MNE-Python for EEG processing</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5><i class="fas fa-database text-warning"></i> Dataset</h5>
+                        <ul>
+                            <li>DEAP Dataset</li>
+                            <li>32 EEG channels</li>
+                            <li>6 emotion categories</li>
+                            <li>Valence & Arousal metrics</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <h3 class="mt-4">Detected Emotions</h3>
+                <p>Our system can accurately detect the following six emotion categories:</p>
+                <div class="row mt-3">
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <div class="emotion-badge emotion-happy mb-2">
+                                    <i class="fas fa-smile"></i> Happy
+                                </div>
+                                <p class="small mb-0">High valence, high arousal</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <div class="emotion-badge emotion-sad mb-2">
+                                    <i class="fas fa-sad-tear"></i> Sad
+                                </div>
+                                <p class="small mb-0">Low valence, low arousal</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <div class="emotion-badge emotion-angry mb-2">
+                                    <i class="fas fa-angry"></i> Angry
+                                </div>
+                                <p class="small mb-0">Low valence, high arousal</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <div class="emotion-badge emotion-relaxed mb-2">
+                                    <i class="fas fa-spa"></i> Relaxed
+                                </div>
+                                <p class="small mb-0">High valence, low arousal</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <div class="emotion-badge emotion-stressed mb-2">
+                                    <i class="fas fa-exclamation-triangle"></i> Stressed
+                                </div>
+                                <p class="small mb-0">Low-mid valence, high arousal</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <div class="emotion-badge emotion-excited mb-2">
+                                    <i class="fas fa-star"></i> Excited
+                                </div>
+                                <p class="small mb-0">High valence, very high arousal</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="mt-4">Applications</h3>
+                <ul>
+                    <li><strong>Healthcare:</strong> Mental health monitoring and diagnosis</li>
+                    <li><strong>Human-Computer Interaction:</strong> Adaptive interfaces based on user emotions</li>
+                    <li><strong>Research:</strong> Emotion analysis and psychological studies</li>
+                    <li><strong>Wellness:</strong> Stress management and emotional well-being tracking</li>
+                </ul>
+
+                <h3 class="mt-4">How It Works</h3>
+                <ol>
+                    <li><strong>Data Upload:</strong> Users upload EEG signal files in supported formats</li>
+                    <li><strong>Preprocessing:</strong> Signals are filtered, normalized, and cleaned</li>
+                    <li><strong>Feature Extraction:</strong> Relevant features are extracted from the signals</li>
+                    <li><strong>AI Analysis:</strong> Deep learning models (CNN/LSTM) analyze the patterns</li>
+                    <li><strong>Emotion Detection:</strong> System predicts the emotion with confidence score</li>
+                    <li><strong>Recommendations:</strong> Personalized suggestions based on detected emotions</li>
+                </ol>
+
+                <div class="alert alert-info mt-4">
+                    <h5><i class="fas fa-lightbulb"></i> Note</h5>
+                    <p class="mb-0">
+                        This system is designed for research and educational purposes. For clinical applications, 
+                        please consult with healthcare professionals.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

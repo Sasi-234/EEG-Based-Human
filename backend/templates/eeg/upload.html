@@ -1,0 +1,212 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Upload EEG Data - EEG Emotion Recognition{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-card {
+        border: 2px dashed #007bff;
+        border-radius: 10px;
+        padding: 30px;
+        text-align: center;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    
+    .upload-card:hover {
+        border-color: #0056b3;
+        background-color: #e9ecef;
+    }
+    
+    .upload-icon {
+        font-size: 4rem;
+        color: #007bff;
+        margin-bottom: 20px;
+    }
+    
+    .file-info {
+        background-color: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 15px;
+        margin-top: 20px;
+    }
+    
+    .recent-uploads-card {
+        margin-top: 30px;
+    }
+    
+    .upload-item {
+        border-left: 4px solid #007bff;
+        padding: 10px;
+        margin-bottom: 10px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+    
+    .upload-item:hover {
+        background-color: #e9ecef;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-upload"></i> Upload EEG Data</h4>
+                </div>
+                <div class="card-body">
+                    <div class="upload-card">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <h5>Upload Your EEG Signal File</h5>
+                        <p class="text-muted">Supported formats: .csv, .dat, .edf, .bdf</p>
+                        
+                        <form method="post" enctype="multipart/form-data" id="uploadForm">
+                            {% csrf_token %}
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.file_path.id_for_label }}" class="form-label">
+                                    Select EEG File
+                                </label>
+                                {{ form.file_path }}
+                                {% if form.file_path.errors %}
+                                    <div class="text-danger mt-2">
+                                        {% for error in form.file_path.errors %}
+                                            <small>{{ error }}</small><br>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.description.id_for_label }}" class="form-label">
+                                    Description (Optional)
+                                </label>
+                                {{ form.description }}
+                                {% if form.description.errors %}
+                                    <div class="text-danger mt-2">
+                                        {% for error in form.description.errors %}
+                                            <small>{{ error }}</small><br>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-upload"></i> Upload File
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <div class="file-info">
+                        <h6><i class="fas fa-info-circle"></i> File Requirements:</h6>
+                        <ul class="text-muted mb-0">
+                            <li>Maximum file size: 100 MB</li>
+                            <li>Supported formats: CSV, DAT, EDF, BDF</li>
+                            <li>EEG data should contain 32 channels (DEAP dataset format)</li>
+                            <li>Sampling rate: 128 Hz or 512 Hz</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-history"></i> Recent Uploads</h5>
+                </div>
+                <div class="card-body">
+                    {% if recent_uploads %}
+                        {% for upload in recent_uploads %}
+                            <div class="upload-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ upload.file_name|truncatechars:20 }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ upload.upload_date|date:"M d, Y H:i" }}
+                                        </small>
+                                    </div>
+                                    <div>
+                                        {% if upload.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif upload.status == 'processing' %}
+                                            <span class="badge bg-warning">Processing</span>
+                                        {% elif upload.status == 'failed' %}
+                                            <span class="badge bg-danger">Failed</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Pending</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <a href="{% url 'eeg_upload_detail' upload.id %}" class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                </div>
+                            </div>
+                        {% endfor %}
+                        
+                        <div class="text-center mt-3">
+                            <a href="{% url 'eeg_upload_list' %}" class="btn btn-sm btn-outline-info">
+                                View All Uploads <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted text-center">No uploads yet</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mt-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-question-circle"></i> How It Works</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="mb-0">
+                        <li class="mb-2">Upload your EEG signal file</li>
+                        <li class="mb-2">System preprocesses the signals</li>
+                        <li class="mb-2">AI model analyzes the data</li>
+                        <li class="mb-2">Emotion is predicted and displayed</li>
+                        <li>View results and recommendations</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        const fileInput = document.getElementById('{{ form.file_path.id_for_label }}');
+        if (!fileInput.files.length) {
+            e.preventDefault();
+            alert('Please select a file to upload');
+            return false;
+        }
+        
+        // Show loading indicator
+        const submitBtn = this.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+    });
+    
+    // File input change handler
+    document.getElementById('{{ form.file_path.id_for_label }}').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+            console.log(`Selected file: ${file.name} (${fileSize} MB)`);
+        }
+    });
+</script>
+{% endblock %}

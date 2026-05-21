@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ upload.file_name }} - EEG Emotion Recognition{% endblock %}
+
+{% block extra_css %}
+<style>
+    .detail-card {
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .info-row {
+        padding: 10px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .info-row:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        font-weight: 600;
+        color: #6c757d;
+    }
+    
+    .prediction-card {
+        border-left: 4px solid #007bff;
+        transition: all 0.3s ease;
+    }
+    
+    .prediction-card:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    
+    .emotion-badge-large {
+        font-size: 1.2rem;
+        padding: 10px 20px;
+        border-radius: 25px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'eeg_upload_list' %}">My Uploads</a></li>
+            <li class="breadcrumb-item active">{{ upload.file_name|truncatechars:30 }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <!-- Upload Details -->
+        <div class="col-md-8">
+            <div class="card shadow-sm detail-card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-file-alt"></i> Upload Details</h4>
+                </div>
+                <div class="card-body">
+                    <div class="info-row">
+                        <div class="row">
+                            <div class="col-md-4 info-label">File Name:</div>
+                            <div class="col-md-8">{{ upload.file_name }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <div class="row">
+                            <div class="col-md-4 info-label">Upload Date:</div>
+                            <div class="col-md-8">{{ upload.upload_date|date:"F d, Y H:i" }}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <div class="row">
+                            <div class="col-md-4 info-label">File Size:</div>
+                            <div class="col-md-8">
+                                {% if upload.file_size %}
+                                    {{ upload.file_size|filesizeformat }}
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-row">
+                        <div class="row">
+                            <div class="col-md-4 info-label">Status:</div>
+                            <div class="col-md-8">
+                                {% if upload.status == 'completed' %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle"></i> Completed
+                                    </span>
+                                {% elif upload.status == 'processing' %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-spinner fa-spin"></i> Processing
+                                    </span>
+                                {% elif upload.status == 'failed' %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times-circle"></i> Failed
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-clock"></i> Pending
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if upload.description %}
+                        <div class="info-row">
+                            <div class="row">
+                                <div class="col-md-4 info-label">Description:</div>
+                                <div class="col-md-8">{{ upload.description }}</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if upload.error_message %}
+                        <div class="info-row">
+                            <div class="row">
+                                <div class="col-md-4 info-label">Error:</div>
+                                <div class="col-md-8">
+                                    <span class="text-danger">{{ upload.error_message }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="info-row">
+                        <div class="row">
+                            <div class="col-md-4 info-label">Total Predictions:</div>
+                            <div class="col-md-8">
+                                <span class="badge bg-info">{{ predictions.count }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <a href="{% url 'eeg_upload_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to List
+                    </a>
+                    <a href="{% url 'eeg_upload_delete' upload.id %}" 
+                       class="btn btn-danger"
+                       onclick="return confirm('Are you sure you want to delete this upload?');">
+                        <i class="fas fa-trash"></i> Delete Upload
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Predictions -->
+            {% if predictions %}
+                <div class="card shadow-sm detail-card">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0"><i class="fas fa-brain"></i> Emotion Predictions</h4>
+                    </div>
+                    <div class="card-body">
+                        {% for prediction in predictions %}
+                            <div class="card prediction-card mb-3">
+                                <div class="card-body">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-4">
+                                            <h5 class="mb-0">Predicted Emotion:</h5>
+                                            <span class="emotion-badge-large emotion-badge-{{ prediction.predicted_emotion }}">
+                                                {{ prediction.get_predicted_emotion_display }}
+                                            </span>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted">Confidence Score</small>
+                                            <div class="progress" style="height: 25px;">
+                                                <div class="progress-bar bg-success" 
+                                                     role="progressbar" 
+                                                     style="width: {{ prediction.confidence_score }}%"
+                                                     aria-valuenow="{{ prediction.confidence_score }}" 
+                                                     aria-valuemin="0" 
+                                                     aria-valuemax="100">
+                                                    {{ prediction.confidence_score }}%
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted">Prediction Date</small><br>
+                                            <strong>{{ prediction.prediction_date|date:"M d, Y H:i" }}</strong>
+                                            <br>
+                                            <a href="{% url 'prediction_detail' prediction.id %}" class="btn btn-sm btn-outline-primary mt-2">
+                                                <i class="fas fa-eye"></i> View Details
+                                            </a>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if prediction.valence or prediction.arousal %}
+                                        <hr>
+                                        <div class="row mt-3">
+                                            {% if prediction.valence %}
+                                                <div class="col-md-6">
+                                                    <small class="text-muted">Valence</small>
+                                                    <div class="progress">
+                                                        <div class="progress-bar bg-info" 
+                                                             role="progressbar" 
+                                                             style="width: {{ prediction.valence }}%">
+                                                            {{ prediction.valence }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                            {% if prediction.arousal %}
+                                                <div class="col-md-6">
+                                                    <small class="text-muted">Arousal</small>
+                                                    <div class="progress">
+                                                        <div class="progress-bar bg-warning" 
+                                                             role="progressbar" 
+                                                             style="width: {{ prediction.arousal }}%">
+                                                            {{ prediction.arousal }}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="card shadow-sm detail-card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-brain fa-4x text-muted mb-3"></i>
+                        <h5>No Predictions Yet</h5>
+                        <p class="text-muted">
+                            {% if upload.status == 'pending' %}
+                                Processing will begin shortly
+                            {% elif upload.status == 'processing' %}
+                                Processing is in progress
+                            {% elif upload.status == 'failed' %}
+                                Processing failed. Please try uploading again.
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line"></i> Statistics</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h2 class="text-primary">{{ predictions.count }}</h2>
+                        <p class="text-muted mb-0">Total Predictions</p>
+                    </div>
+                    
+                    {% if upload.status == 'completed' %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> Processing completed successfully
+                        </div>
+                    {% elif upload.status == 'processing' %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-spinner fa-spin"></i> Processing in progress...
+                        </div>
+                    {% elif upload.status == 'failed' %}
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle"></i> Processing failed
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb"></i> Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'eeg_upload' %}" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Upload New File
+                        </a>
+                        <a href="{% url 'prediction_list' %}" class="btn btn-outline-success">
+                            <i class="fas fa-list"></i> View All Predictions
+                        </a>
+                        <a href="{% url 'dashboard' %}" class="btn btn-outline-info">
+                            <i class="fas fa-tachometer-alt"></i> Go to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

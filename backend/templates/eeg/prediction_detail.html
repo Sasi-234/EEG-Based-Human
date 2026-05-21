@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Prediction Details - EEG Emotion Recognition{% endblock %}
+
+{% block extra_css %}
+<style>
+    .emotion-display {
+        text-align: center;
+        padding: 40px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+    }
+    
+    .emotion-icon {
+        font-size: 5rem;
+        margin-bottom: 20px;
+    }
+    
+    .emotion-name {
+        font-size: 2.5rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    
+    .confidence-display {
+        font-size: 1.5rem;
+        margin-top: 20px;
+    }
+    
+    .metric-card {
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        margin-bottom: 20px;
+    }
+    
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+    }
+    
+    .metric-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    
+    .detail-section {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'prediction_list' %}">Predictions</a></li>
+            <li class="breadcrumb-item active">Prediction #{{ prediction.id }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <!-- Main Content -->
+        <div class="col-md-8">
+            <!-- Emotion Display -->
+            <div class="emotion-display emotion-bg-{{ prediction.predicted_emotion }} shadow-lg">
+                <div class="emotion-icon">
+                    {% if prediction.predicted_emotion == 'happy' %}
+                        😊
+                    {% elif prediction.predicted_emotion == 'sad' %}
+                        😢
+                    {% elif prediction.predicted_emotion == 'angry' %}
+                        😠
+                    {% elif prediction.predicted_emotion == 'relaxed' %}
+                        😌
+                    {% elif prediction.predicted_emotion == 'excited' %}
+                        🤩
+                    {% elif prediction.predicted_emotion == 'stressed' %}
+                        😰
+                    {% endif %}
+                </div>
+                <div class="emotion-name">
+                    {{ prediction.get_predicted_emotion_display }}
+                </div>
+                <div class="confidence-display">
+                    <div class="progress" style="height: 30px;">
+                        <div class="progress-bar bg-success" 
+                             role="progressbar" 
+                             style="width: {{ prediction.confidence_score }}%">
+                            Confidence: {{ prediction.confidence_score }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Valence and Arousal -->
+            {% if prediction.valence or prediction.arousal %}
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-chart-bar"></i> Emotional Dimensions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            {% if prediction.valence %}
+                                <div class="col-md-6">
+                                    <div class="metric-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                                        <div class="metric-label">VALENCE</div>
+                                        <div class="metric-value">{{ prediction.valence }}</div>
+                                        <small>Pleasantness Level</small>
+                                        <div class="progress mt-3" style="height: 10px;">
+                                            <div class="progress-bar bg-light" 
+                                                 style="width: {{ prediction.valence }}%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                            {% if prediction.arousal %}
+                                <div class="col-md-6">
+                                    <div class="metric-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                                        <div class="metric-label">AROUSAL</div>
+                                        <div class="metric-value">{{ prediction.arousal }}</div>
+                                        <small>Activation Level</small>
+                                        <div class="progress mt-3" style="height: 10px;">
+                                            <div class="progress-bar bg-light" 
+                                                 style="width: {{ prediction.arousal }}%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <!-- Prediction Details -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle"></i> Prediction Information</h5>
+                </div>
+                <div class="card-body">
+                    <div class="detail-section">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <strong>Prediction Date:</strong><br>
+                                {{ prediction.prediction_date|date:"F d, Y H:i:s" }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <strong>Model Used:</strong><br>
+                                {% if prediction.model_version %}
+                                    {{ prediction.model_version.model_name }} v{{ prediction.model_version.version }}
+                                {% else %}
+                                    <span class="text-muted">Not specified</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <strong>Processing Time:</strong><br>
+                                {% if prediction.processing_time %}
+                                    {{ prediction.processing_time|floatformat:2 }} seconds
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <strong>Source File:</strong><br>
+                                <a href="{% url 'eeg_upload_detail' prediction.upload.id %}">
+                                    {{ prediction.upload.file_name|truncatechars:30 }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if prediction.raw_output %}
+                        <div class="detail-section">
+                            <strong>Raw Model Output:</strong>
+                            <pre class="mt-2 p-3 bg-white border rounded">{{ prediction.raw_output|pprint }}</pre>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'prediction_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to List
+                        </a>
+                        <a href="{% url 'eeg_upload_detail' prediction.upload.id %}" class="btn btn-primary">
+                            <i class="fas fa-file"></i> View Upload
+                        </a>
+                        <a href="{% url 'eeg_upload' %}" class="btn btn-success">
+                            <i class="fas fa-upload"></i> New Upload
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Emotion Info -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb"></i> About This Emotion</h5>
+                </div>
+                <div class="card-body">
+                    {% if prediction.predicted_emotion == 'happy' %}
+                        <p>A positive emotional state characterized by feelings of joy, contentment, and well-being.</p>
+                    {% elif prediction.predicted_emotion == 'sad' %}
+                        <p>A negative emotional state characterized by feelings of sorrow, disappointment, or unhappiness.</p>
+                    {% elif prediction.predicted_emotion == 'angry' %}
+                        <p>A strong negative emotion characterized by feelings of displeasure, hostility, or frustration.</p>
+                    {% elif prediction.predicted_emotion == 'relaxed' %}
+                        <p>A calm emotional state characterized by low arousal and positive feelings of peace.</p>
+                    {% elif prediction.predicted_emotion == 'excited' %}
+                        <p>A high-energy positive emotion characterized by enthusiasm and anticipation.</p>
+                    {% elif prediction.predicted_emotion == 'stressed' %}
+                        <p>A negative emotional state characterized by tension, anxiety, and feeling overwhelmed.</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Recommendations -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-star"></i> Recommendations</h5>
+                </div>
+                <div class="card-body">
+                    {% if prediction.predicted_emotion == 'happy' %}
+                        <ul class="mb-0">
+                            <li>Share your positive energy with others</li>
+                            <li>Engage in creative activities</li>
+                            <li>Practice gratitude</li>
+                        </ul>
+                    {% elif prediction.predicted_emotion == 'sad' %}
+                        <ul class="mb-0">
+                            <li>Talk to someone you trust</li>
+                            <li>Engage in light physical activity</li>
+                            <li>Listen to uplifting music</li>
+                        </ul>
+                    {% elif prediction.predicted_emotion == 'angry' %}
+                        <ul class="mb-0">
+                            <li>Practice deep breathing exercises</li>
+                            <li>Take a short walk</li>
+                            <li>Write down your feelings</li>
+                        </ul>
+                    {% elif prediction.predicted_emotion == 'relaxed' %}
+                        <ul class="mb-0">
+                            <li>Maintain this peaceful state</li>
+                            <li>Practice mindfulness</li>
+                            <li>Enjoy calming activities</li>
+                        </ul>
+                    {% elif prediction.predicted_emotion == 'excited' %}
+                        <ul class="mb-0">
+                            <li>Channel energy into productive tasks</li>
+                            <li>Share your enthusiasm</li>
+                            <li>Set achievable goals</li>
+                        </ul>
+                    {% elif prediction.predicted_emotion == 'stressed' %}
+                        <ul class="mb-0">
+                            <li>Practice relaxation techniques</li>
+                            <li>Take regular breaks</li>
+                            <li>Prioritize self-care</li>
+                        </ul>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Statistics -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie"></i> Quick Stats</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center">
+                        <h3 class="text-primary">{{ prediction.confidence_score }}%</h3>
+                        <p class="text-muted mb-0">Confidence Score</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
