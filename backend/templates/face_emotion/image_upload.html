@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Upload Face Image - EEG Emotion Recognition{% endblock %}
+
+{% block extra_css %}
+<style>
+    .upload-container {
+        max-width: 800px;
+        margin: 40px auto;
+        padding: 30px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .preview-container {
+        margin: 20px 0;
+        text-align: center;
+    }
+    
+    .preview-image {
+        max-width: 100%;
+        max-height: 400px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .upload-info {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    }
+    
+    .upload-info h5 {
+        color: #495057;
+        margin-bottom: 15px;
+    }
+    
+    .upload-info ul {
+        margin-bottom: 0;
+    }
+    
+    .upload-info li {
+        color: #6c757d;
+        margin-bottom: 8px;
+    }
+    
+    .btn-upload {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        padding: 12px 30px;
+        font-size: 16px;
+        font-weight: 600;
+    }
+    
+    .btn-upload:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="upload-container">
+        <h2 class="text-center mb-4">
+            <i class="fas fa-image"></i> Upload Face Image for Emotion Detection
+        </h2>
+        
+        <div class="upload-info">
+            <h5><i class="fas fa-info-circle"></i> Upload Guidelines</h5>
+            <ul>
+                <li>Supported formats: JPG, JPEG, PNG, BMP</li>
+                <li>Maximum file size: 5MB</li>
+                <li>Image should contain a clear frontal face</li>
+                <li>Good lighting conditions recommended</li>
+                <li>Avoid sunglasses or face coverings</li>
+            </ul>
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <form method="post" enctype="multipart/form-data" id="uploadForm">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="{{ form.image.id_for_label }}" class="form-label">
+                    <i class="fas fa-file-image"></i> Select Image
+                </label>
+                {{ form.image }}
+                {% if form.image.errors %}
+                    <div class="text-danger mt-2">
+                        {{ form.image.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="preview-container" id="previewContainer" style="display: none;">
+                <h5>Image Preview:</h5>
+                <img id="imagePreview" class="preview-image" alt="Preview">
+            </div>
+            
+            <div class="mb-3">
+                <label for="{{ form.notes.id_for_label }}" class="form-label">
+                    <i class="fas fa-sticky-note"></i> Notes (Optional)
+                </label>
+                {{ form.notes }}
+                {% if form.notes.errors %}
+                    <div class="text-danger mt-2">
+                        {{ form.notes.errors }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary btn-upload">
+                    <i class="fas fa-cloud-upload-alt"></i> Upload and Detect Emotion
+                </button>
+                <a href="{% url 'face_emotion:prediction_history' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-history"></i> View History
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('{{ form.image.id_for_label }}').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('imagePreview').src = e.target.result;
+            document.getElementById('previewContainer').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+});
+</script>
+{% endblock %}

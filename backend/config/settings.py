@@ -35,16 +35,18 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+
     # Third-party apps
     'rest_framework',
-    
+
     # Local apps
     'users',
     'eeg_processing',
     'ml_models',
     'api',
     'recommendations',
+    'face_emotion',
+    'wellness_chatbot',  # ✅ KEEP ONLY ONCE
 ]
 
 MIDDLEWARE = [

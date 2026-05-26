@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Prediction History - Face Emotion Recognition{% endblock %}
+
+{% block extra_css %}
+<style>
+    .history-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 30px;
+    }
+    
+    .filter-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 30px;
+    }
+    
+    .prediction-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        overflow: hidden;
+        transition: transform 0.3s ease;
+    }
+    
+    .prediction-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    
+    .prediction-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+    
+    .prediction-content {
+        padding: 20px;
+    }
+    
+    .emotion-badge {
+        display: inline-block;
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+    
+    .emotion-happy { background: #d4edda; color: #155724; }
+    .emotion-sad { background: #cce5ff; color: #004085; }
+    .emotion-angry { background: #f8d7da; color: #721c24; }
+    .emotion-fear { background: #fff3cd; color: #856404; }
+    .emotion-neutral { background: #e2e3e5; color: #383d41; }
+    .emotion-surprise { background: #d1ecf1; color: #0c5460; }
+    .emotion-relaxed { background: #d4edda; color: #155724; }
+    .emotion-stress { background: #f8d7da; color: #721c24; }
+    
+    .confidence-bar {
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+        margin-top: 10px;
+    }
+    
+    .confidence-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        transition: width 0.3s ease;
+    }
+    
+    .stats-card {
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    
+    .stats-number {
+        font-size: 36px;
+        font-weight: 700;
+        color: #667eea;
+    }
+    
+    .stats-label {
+        color: #6c757d;
+        font-size: 14px;
+        margin-top: 5px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .empty-state i {
+        font-size: 64px;
+        color: #dee2e6;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container history-container">
+    <h2 class="text-center mb-4">
+        <i class="fas fa-history"></i> Face Emotion Prediction History
+    </h2>
+    
+    <!-- Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number">{{ total_predictions }}</div>
+                <div class="stats-label">Total Predictions</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number">{{ avg_confidence|floatformat:1 }}%</div>
+                <div class="stats-label">Avg Confidence</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number">{{ most_common_emotion|default:"N/A" }}</div>
+                <div class="stats-label">Most Common</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stats-number">{{ today_count }}</div>
+                <div class="stats-label">Today</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filter-card">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Emotion</label>
+                {{ filter_form.emotion }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">From Date</label>
+                {{ filter_form.from_date }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">To Date</label>
+                {{ filter_form.to_date }}
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Min Confidence</label>
+                {{ filter_form.min_confidence }}
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-filter"></i> Apply Filters
+                </button>
+                <a href="{% url 'face_emotion:prediction_history' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-redo"></i> Reset
+                </a>
+                <a href="{% url 'face_emotion:image_upload' %}" class="btn btn-success float-end">
+                    <i class="fas fa-plus"></i> New Prediction
+                </a>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Predictions List -->
+    {% if predictions %}
+        <div class="row">
+            {% for prediction in predictions %}
+                <div class="col-md-4">
+                    <div class="prediction-card">
+                        {% if prediction.image %}
+                            <img src="{{ prediction.image.url }}" alt="Face" class="prediction-image">
+                        {% else %}
+                            <div class="prediction-image" style="background: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                                <i class="fas fa-image" style="font-size: 48px; color: #dee2e6;"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="prediction-content">
+                            <span class="emotion-badge emotion-{{ prediction.predicted_emotion|lower }}">
+                                {{ prediction.predicted_emotion|upper }}
+                            </span>
+                            
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-clock"></i> 
+                                    {{ prediction.created_at|date:"M d, Y H:i" }}
+                                </small>
+                            </div>
+                            
+                            <div class="mt-2">
+                                <small class="text-muted">Confidence:</small>
+                                <strong>{{ prediction.confidence|floatformat:1 }}%</strong>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" style="width: {{ prediction.confidence }}%"></div>
+                                </div>
+                            </div>
+                            
+                            {% if prediction.notes %}
+                                <div class="mt-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-sticky-note"></i> {{ prediction.notes|truncatewords:15 }}
+                                    </small>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="mt-3">
+                                <a href="{% url 'face_emotion:prediction_detail' prediction.id %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> View Details
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mt-4">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <h4>No Predictions Yet</h4>
+            <p class="text-muted">Start by uploading an image or using the webcam to detect emotions.</p>
+            <a href="{% url 'face_emotion:image_upload' %}" class="btn btn-primary mt-3">
+                <i class="fas fa-upload"></i> Upload Image
+            </a>
+            <a href="{% url 'face_emotion:webcam_capture' %}" class="btn btn-outline-primary mt-3">
+                <i class="fas fa-camera"></i> Use Webcam
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

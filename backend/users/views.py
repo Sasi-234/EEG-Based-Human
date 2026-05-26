@@ -46,7 +46,7 @@ def home(request):
 def register(request):
     """User registration view"""
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect('users:dashboard')
     
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
@@ -57,7 +57,7 @@ def register(request):
             # Log the user in
             login(request, user)
             messages.success(request, f'Welcome {user.username}! Your account has been created successfully.')
-            return redirect('dashboard')
+            return redirect('users:dashboard')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -69,7 +69,7 @@ def register(request):
 def user_login(request):
     """User login view"""
     if request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect('users:dashboard')
     
     if request.method == 'POST':
         form = UserLoginForm(request, data=request.POST)
@@ -102,7 +102,7 @@ def user_login(request):
                 messages.success(request, f'Welcome back, {user.username}!')
                 
                 # Redirect to next page or dashboard
-                next_page = request.GET.get('next', 'dashboard')
+                next_page = request.GET.get('next', 'users:dashboard')
                 return redirect(next_page)
             else:
                 messages.error(request, 'Invalid username/email or password.')
@@ -169,7 +169,7 @@ def profile(request):
             form.save()
             log_activity(request.user, 'profile_update', 'User updated profile', request)
             messages.success(request, 'Your profile has been updated successfully.')
-            return redirect('profile')
+            return redirect('users:profile')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
@@ -189,7 +189,7 @@ def change_password(request):
             update_session_auth_hash(request, user)
             log_activity(request.user, 'password_change', 'User changed password', request)
             messages.success(request, 'Your password has been changed successfully.')
-            return redirect('profile')
+            return redirect('users:profile')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:

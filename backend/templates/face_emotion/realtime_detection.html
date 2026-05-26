@@ -1,0 +1,443 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Real-time Detection - Face Emotion Recognition{% endblock %}
+
+{% block extra_css %}
+<style>
+    .realtime-container {
+        max-width: 1400px;
+        margin: 40px auto;
+        padding: 30px;
+    }
+    
+    .video-section {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+    
+    .video-container {
+        position: relative;
+        background: #000;
+        border-radius: 10px;
+        overflow: hidden;
+        margin-bottom: 20px;
+    }
+    
+    #videoElement {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+    
+    .video-overlay {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .emotion-display {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(102, 126, 234, 0.95);
+        color: white;
+        padding: 20px 40px;
+        border-radius: 50px;
+        font-size: 24px;
+        font-weight: 700;
+        text-align: center;
+        min-width: 200px;
+    }
+    
+    .controls {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .btn-control {
+        padding: 12px 30px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 8px;
+    }
+    
+    .stats-panel {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 30px;
+    }
+    
+    .stat-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 15px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .stat-row:last-child {
+        border-bottom: none;
+    }
+    
+    .stat-label {
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .stat-value {
+        color: #667eea;
+        font-weight: 700;
+    }
+    
+    .detection-log {
+        max-height: 400px;
+        overflow-y: auto;
+        margin-top: 20px;
+    }
+    
+    .log-item {
+        padding: 10px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        margin-bottom: 8px;
+        font-size: 14px;
+    }
+    
+    .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .status-active {
+        background: #28a745;
+        animation: pulse 2s infinite;
+    }
+    
+    .status-inactive {
+        background: #dc3545;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container realtime-container">
+    <h2 class="text-center mb-4">
+        <i class="fas fa-video"></i> Real-time Emotion Detection
+    </h2>
+    
+    <div class="row">
+        <!-- Video Section -->
+        <div class="col-lg-8">
+            <div class="video-section">
+                <div class="video-container">
+                    <video id="videoElement" autoplay playsinline></video>
+                    <canvas id="canvasElement" style="display: none;"></canvas>
+                    
+                    <div class="video-overlay">
+                        <span class="status-indicator" id="statusIndicator"></span>
+                        <span id="statusText">Initializing...</span>
+                    </div>
+                    
+                    <div class="emotion-display" id="emotionDisplay" style="display: none;">
+                        <div id="currentEmotion">--</div>
+                        <small id="currentConfidence">--</small>
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button id="startBtn" class="btn btn-success btn-control">
+                        <i class="fas fa-play"></i> Start Detection
+                    </button>
+                    <button id="stopBtn" class="btn btn-danger btn-control" disabled>
+                        <i class="fas fa-stop"></i> Stop Detection
+                    </button>
+                    <button id="pauseBtn" class="btn btn-warning btn-control" disabled>
+                        <i class="fas fa-pause"></i> Pause
+                    </button>
+                    <button id="captureBtn" class="btn btn-primary btn-control" disabled>
+                        <i class="fas fa-camera"></i> Capture Frame
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats Panel -->
+        <div class="col-lg-4">
+            <div class="stats-panel">
+                <h5><i class="fas fa-chart-line"></i> Session Statistics</h5>
+                
+                <div class="stat-row">
+                    <span class="stat-label">Session ID:</span>
+                    <span class="stat-value" id="sessionId">--</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Frames Processed:</span>
+                    <span class="stat-value" id="frameCount">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Faces Detected:</span>
+                    <span class="stat-value" id="faceCount">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Avg Confidence:</span>
+                    <span class="stat-value" id="avgConfidence">0%</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Duration:</span>
+                    <span class="stat-value" id="duration">00:00</span>
+                </div>
+                
+                <div class="detection-log">
+                    <h6 class="mt-4"><i class="fas fa-list"></i> Detection Log</h6>
+                    <div id="logContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let video = document.getElementById('videoElement');
+let canvas = document.getElementById('canvasElement');
+let ctx = canvas.getContext('2d');
+let stream = null;
+let sessionId = null;
+let isDetecting = false;
+let detectionInterval = null;
+let startTime = null;
+let durationInterval = null;
+
+// Statistics
+let stats = {
+    frameCount: 0,
+    faceCount: 0,
+    totalConfidence: 0
+};
+
+// Start detection
+document.getElementById('startBtn').addEventListener('click', async function() {
+    try {
+        // Start webcam
+        stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { width: 1280, height: 720 } 
+        });
+        video.srcObject = stream;
+        
+        // Start session
+        const response = await fetch('/face-emotion/api/start-session/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            sessionId = data.session_id;
+            document.getElementById('sessionId').textContent = sessionId;
+            startTime = new Date();
+            
+            // Update UI
+            updateStatus('active', 'Detecting...');
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = false;
+            document.getElementById('captureBtn').disabled = false;
+            document.getElementById('emotionDisplay').style.display = 'block';
+            
+            // Start detection loop
+            isDetecting = true;
+            startDetectionLoop();
+            startDurationTimer();
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to start detection: ' + error.message);
+    }
+});
+
+// Stop detection
+document.getElementById('stopBtn').addEventListener('click', async function() {
+    await stopDetection();
+});
+
+// Pause detection
+document.getElementById('pauseBtn').addEventListener('click', function() {
+    if (isDetecting) {
+        isDetecting = false;
+        this.innerHTML = '<i class="fas fa-play"></i> Resume';
+        updateStatus('inactive', 'Paused');
+    } else {
+        isDetecting = true;
+        this.innerHTML = '<i class="fas fa-pause"></i> Pause';
+        updateStatus('active', 'Detecting...');
+    }
+});
+
+// Capture frame
+document.getElementById('captureBtn').addEventListener('click', function() {
+    captureAndPredict();
+});
+
+// Detection loop
+function startDetectionLoop() {
+    detectionInterval = setInterval(() => {
+        if (isDetecting) {
+            captureAndPredict();
+        }
+    }, 2000); // Detect every 2 seconds
+}
+
+// Capture and predict
+async function captureAndPredict() {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0);
+    
+    const imageData = canvas.toDataURL('image/jpeg');
+    
+    try {
+        const response = await fetch('/face-emotion/api/predict-webcam/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                image: imageData,
+                session_id: sessionId
+            })
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            updateEmotion(data.emotion, data.confidence);
+            updateStats(data);
+            addLog(data.emotion, data.confidence);
+        }
+    } catch (error) {
+        console.error('Prediction error:', error);
+    }
+}
+
+// Update emotion display
+function updateEmotion(emotion, confidence) {
+    document.getElementById('currentEmotion').textContent = emotion.toUpperCase();
+    document.getElementById('currentConfidence').textContent = confidence.toFixed(1) + '%';
+}
+
+// Update statistics
+function updateStats(data) {
+    stats.frameCount++;
+    if (data.face_detected) stats.faceCount++;
+    stats.totalConfidence += data.confidence;
+    
+    document.getElementById('frameCount').textContent = stats.frameCount;
+    document.getElementById('faceCount').textContent = stats.faceCount;
+    document.getElementById('avgConfidence').textContent = 
+        (stats.totalConfidence / stats.frameCount).toFixed(1) + '%';
+}
+
+// Add log entry
+function addLog(emotion, confidence) {
+    const logContainer = document.getElementById('logContainer');
+    const logItem = document.createElement('div');
+    logItem.className = 'log-item';
+    logItem.textContent = `${new Date().toLocaleTimeString()} - ${emotion} (${confidence.toFixed(1)}%)`;
+    logContainer.insertBefore(logItem, logContainer.firstChild);
+    
+    // Keep only last 10 logs
+    while (logContainer.children.length > 10) {
+        logContainer.removeChild(logContainer.lastChild);
+    }
+}
+
+// Update status
+function updateStatus(status, text) {
+    const indicator = document.getElementById('statusIndicator');
+    indicator.className = 'status-indicator status-' + status;
+    document.getElementById('statusText').textContent = text;
+}
+
+// Duration timer
+function startDurationTimer() {
+    durationInterval = setInterval(() => {
+        if (startTime) {
+            const elapsed = Math.floor((new Date() - startTime) / 1000);
+            const minutes = Math.floor(elapsed / 60);
+            const seconds = elapsed % 60;
+            document.getElementById('duration').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }, 1000);
+}
+
+// Stop detection
+async function stopDetection() {
+    isDetecting = false;
+    clearInterval(detectionInterval);
+    clearInterval(durationInterval);
+    
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+    
+    // End session
+    if (sessionId) {
+        await fetch('/face-emotion/api/end-session/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ session_id: sessionId })
+        });
+    }
+    
+    // Reset UI
+    updateStatus('inactive', 'Stopped');
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('stopBtn').disabled = true;
+    document.getElementById('pauseBtn').disabled = true;
+    document.getElementById('captureBtn').disabled = true;
+    document.getElementById('emotionDisplay').style.display = 'none';
+    
+    // Redirect to session detail
+    if (sessionId) {
+        setTimeout(() => {
+            window.location.href = `/face-emotion/session/${sessionId}/`;
+        }, 1000);
+    }
+}
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', function() {
+    if (isDetecting) {
+        stopDetection();
+    }
+});
+</script>
+{% endblock %}

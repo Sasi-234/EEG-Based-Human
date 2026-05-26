@@ -1,0 +1,478 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Wellness Chatbot - Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/chatbot.css' %}">
+<style>
+.wellness-score-gauge {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 0 auto;
+}
+.gauge-circle {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: conic-gradient(
+        #28a745 0deg,
+        #28a745 {{ wellness_score.score }}deg,
+        #e9ecef {{ wellness_score.score }}deg
+    );
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.gauge-inner {
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+.gauge-score {
+    font-size: 3rem;
+    font-weight: bold;
+    color: #28a745;
+}
+.gauge-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+.emotion-badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 500;
+    margin: 0.25rem;
+}
+.emotion-stress { background: #dc3545; color: white; }
+.emotion-anxiety { background: #fd7e14; color: white; }
+.emotion-sad { background: #6c757d; color: white; }
+.emotion-angry { background: #dc3545; color: white; }
+.emotion-happy { background: #ffc107; color: #000; }
+.emotion-excited { background: #ff69b4; color: white; }
+.emotion-relaxed { background: #28a745; color: white; }
+.emotion-neutral { background: #6c757d; color: white; }
+.recommendation-card {
+    transition: transform 0.2s;
+    cursor: pointer;
+}
+.recommendation-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-2">
+                <i class="fas fa-robot text-primary"></i> AI Wellness Assistant
+            </h1>
+            <p class="text-muted">Your personal mental wellness companion</p>
+        </div>
+    </div>
+
+    <!-- Wellness Score Section -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-body text-center">
+                    <h5 class="card-title mb-4">Wellness Score</h5>
+                    <div class="wellness-score-gauge">
+                        <div class="gauge-circle">
+                            <div class="gauge-inner">
+                                <div class="gauge-score">{{ wellness_score.score|floatformat:0 }}</div>
+                                <div class="gauge-label">/ 100</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <span class="badge bg-{% if wellness_score.score >= 80 %}success{% elif wellness_score.score >= 60 %}info{% elif wellness_score.score >= 40 %}warning{% else %}danger{% endif %} fs-6">
+                            {{ wellness_score.level }}
+                        </span>
+                    </div>
+                    <p class="mt-3 text-muted">{{ wellness_score.message }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">Wellness Factors</h5>
+                    {% for factor in wellness_score.factors %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span>{{ factor.name }}</span>
+                            <span class="text-muted">{{ factor.score|floatformat:1 }} / {{ factor.max }}</span>
+                        </div>
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar bg-{% if factor.score >= factor.max * 0.8 %}success{% elif factor.score >= factor.max * 0.5 %}info{% else %}warning{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ factor.score|floatformat:0 }}%"
+                                 aria-valuenow="{{ factor.score }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="{{ factor.max }}">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Emotion & Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-heart-pulse"></i> Current Emotional State
+                    </h5>
+                    <div id="current-emotion-display" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-bolt"></i> Quick Actions
+                    </h5>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary btn-lg" onclick="openChatbot()">
+                            <i class="fas fa-comments"></i> Start Chat Session
+                        </button>
+                        <button class="btn btn-outline-success" onclick="getRecommendations()">
+                            <i class="fas fa-lightbulb"></i> Get Wellness Tips
+                        </button>
+                        <a href="{% url 'wellness_chatbot:history' %}" class="btn btn-outline-info">
+                            <i class="fas fa-history"></i> View Chat History
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Emotions Chart -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h5 class="card-title mb-4">
+                        <i class="fas fa-chart-line"></i> Emotion Trends (Last 7 Days)
+                    </h5>
+                    <div id="emotion-chart-container">
+                        {% if emotion_summary %}
+                        <canvas id="emotionChart" height="80"></canvas>
+                        {% else %}
+                        <p class="text-center text-muted py-5">
+                            <i class="fas fa-chart-line fa-3x mb-3"></i><br>
+                            No emotion data available yet. Start using the system to see your trends!
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wellness Recommendations -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star"></i> Personalized Recommendations
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="recommendations-container" class="row">
+                        <div class="col-12 text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading recommendations...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Chat Messages -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-comments"></i> Recent Conversations
+                    </h5>
+                    <a href="{% url 'wellness_chatbot:history' %}" class="btn btn-sm btn-outline-primary">
+                        View All
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if recent_messages %}
+                    <div class="list-group">
+                        {% for message in recent_messages %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">
+                                    {% if message.is_user_message %}
+                                    <i class="fas fa-user text-primary"></i> You
+                                    {% else %}
+                                    <i class="fas fa-robot text-success"></i> Wellness Assistant
+                                    {% endif %}
+                                </h6>
+                                <small class="text-muted">{{ message.timestamp|timesince }} ago</small>
+                            </div>
+                            <p class="mb-1">{{ message.message|truncatewords:20 }}</p>
+                            {% if message.emotion_context %}
+                            <small class="emotion-badge emotion-{{ message.emotion_context }}">
+                                {{ message.emotion_context|title }}
+                            </small>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-muted py-4">
+                        <i class="fas fa-comments fa-3x mb-3"></i><br>
+                        No conversations yet. Start chatting with your wellness assistant!
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wellness Log -->
+    {% if wellness_log %}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-calendar-check"></i> Today's Wellness Log
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 text-center">
+                            <h6>Mood Rating</h6>
+                            <div class="display-4">{{ wellness_log.mood_rating }}/10</div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h6>Stress Level</h6>
+                            <div class="display-4" style="color: {{ wellness_log.get_stress_level_display_color }}">
+                                {{ wellness_log.stress_level }}/5
+                            </div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h6>Interactions</h6>
+                            <div class="display-4">{{ wellness_log.chatbot_interactions }}</div>
+                        </div>
+                        <div class="col-md-3 text-center">
+                            <h6>Activities</h6>
+                            <div class="display-4">{{ wellness_log.wellness_activities|length }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="{% static 'js/chatbot.js' %}"></script>
+<script>
+// Load current emotion
+function loadCurrentEmotion() {
+    fetch('/chatbot/api/latest-emotion/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const container = document.getElementById('current-emotion-display');
+                container.innerHTML = `
+                    <div class="emotion-badge emotion-${data.emotion} fs-4 mb-3">
+                        ${data.emotion.charAt(0).toUpperCase() + data.emotion.slice(1)}
+                    </div>
+                    <div class="text-muted">
+                        Confidence: ${(data.confidence * 100).toFixed(1)}%
+                    </div>
+                    ${data.eeg_emotion ? `<small class="text-muted">EEG: ${data.eeg_emotion}</small><br>` : ''}
+                    ${data.face_emotion ? `<small class="text-muted">Face: ${data.face_emotion}</small>` : ''}
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading emotion:', error);
+            document.getElementById('current-emotion-display').innerHTML = 
+                '<p class="text-muted">Unable to load emotion data</p>';
+        });
+}
+
+// Load recommendations
+function loadRecommendations() {
+    fetch('/chatbot/api/latest-emotion/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                return fetch(`/chatbot/api/recommendations/?emotion=${data.emotion}`);
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayRecommendations(data.recommendations);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading recommendations:', error);
+        });
+}
+
+function displayRecommendations(recommendations) {
+    const container = document.getElementById('recommendations-container');
+    container.innerHTML = '';
+    
+    recommendations.forEach(rec => {
+        const col = document.createElement('div');
+        col.className = 'col-md-4 mb-3';
+        col.innerHTML = `
+            <div class="card recommendation-card h-100">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-${getIconForType(rec.type)}"></i> ${rec.title}
+                    </h6>
+                    <p class="card-text">${rec.description}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i> ${rec.duration} min
+                        </small>
+                        <button class="btn btn-sm btn-primary" onclick="startActivity('${rec.type}', '${rec.title}')">
+                            Start
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        container.appendChild(col);
+    });
+}
+
+function getIconForType(type) {
+    const icons = {
+        'breathing': 'wind',
+        'meditation': 'spa',
+        'music': 'music',
+        'exercise': 'running',
+        'social': 'users',
+        'mindfulness': 'brain',
+        'relaxation': 'leaf',
+        'productivity': 'tasks',
+        'motivation': 'star'
+    };
+    return icons[type] || 'heart';
+}
+
+function startActivity(type, title) {
+    // Log activity start
+    fetch('/chatbot/api/log-activity/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            type: type,
+            text: title,
+            emotion: 'current',
+            completed: false
+        })
+    });
+    
+    alert(`Starting: ${title}\n\nTake your time and focus on the activity. You've got this!`);
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Emotion chart
+{% if emotion_summary %}
+const ctx = document.getElementById('emotionChart').getContext('2d');
+const emotionChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: [{% for emotion, count in emotion_summary.items %}'{{ emotion|title }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: 'Frequency',
+            data: [{% for emotion, count in emotion_summary.items %}{{ count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(153, 102, 255, 0.7)',
+                'rgba(255, 159, 64, 0.7)'
+            ],
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    stepSize: 1
+                }
+            }
+        }
+    }
+});
+{% endif %}
+
+// Load data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadCurrentEmotion();
+    loadRecommendations();
+    
+    // Refresh every 5 minutes
+    setInterval(loadCurrentEmotion, 300000);
+});
+</script>
+{% endblock %}

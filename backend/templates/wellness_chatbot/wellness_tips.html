@@ -1,0 +1,505 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Wellness Tips - Wellness Chatbot{% endblock %}
+
+{% block extra_css %}
+<style>
+.tip-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    height: 100%;
+}
+.tip-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+.tip-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin: 0 auto 16px;
+}
+.category-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+.tip-expanded {
+    background: #f8f9fa;
+    border-left: 4px solid #667eea;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2">
+                        <i class="fas fa-lightbulb text-warning"></i> Wellness Tips Library
+                    </h1>
+                    <p class="text-muted">Discover personalized wellness recommendations</p>
+                </div>
+                <a href="{% url 'wellness_chatbot:dashboard' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Filter -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h6 class="mb-3">
+                        <i class="fas fa-filter"></i> Filter by Category:
+                    </h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button class="btn btn-outline-primary active" data-category="all" onclick="filterByCategory('all')">
+                            All Tips
+                        </button>
+                        <button class="btn btn-outline-success" data-category="breathing" onclick="filterByCategory('breathing')">
+                            <i class="fas fa-wind"></i> Breathing
+                        </button>
+                        <button class="btn btn-outline-info" data-category="meditation" onclick="filterByCategory('meditation')">
+                            <i class="fas fa-spa"></i> Meditation
+                        </button>
+                        <button class="btn btn-outline-warning" data-category="exercise" onclick="filterByCategory('exercise')">
+                            <i class="fas fa-running"></i> Exercise
+                        </button>
+                        <button class="btn btn-outline-danger" data-category="mindfulness" onclick="filterByCategory('mindfulness')">
+                            <i class="fas fa-brain"></i> Mindfulness
+                        </button>
+                        <button class="btn btn-outline-secondary" data-category="relaxation" onclick="filterByCategory('relaxation')">
+                            <i class="fas fa-leaf"></i> Relaxation
+                        </button>
+                        <button class="btn btn-outline-dark" data-category="productivity" onclick="filterByCategory('productivity')">
+                            <i class="fas fa-tasks"></i> Productivity
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-md-6 mx-auto">
+            <div class="input-group input-group-lg">
+                <span class="input-group-text">
+                    <i class="fas fa-search"></i>
+                </span>
+                <input type="text" class="form-control" id="search-tips" placeholder="Search wellness tips..." onkeyup="searchTips()">
+            </div>
+        </div>
+    </div>
+
+    <!-- Tips Grid -->
+    <div class="row" id="tips-container">
+        {% if tips %}
+            {% for tip in tips %}
+            <div class="col-md-4 mb-4 tip-item" data-category="{{ tip.category }}" data-emotion="{{ tip.emotion_target }}">
+                <div class="card tip-card shadow-sm" onclick="expandTip({{ tip.id }})">
+                    <div class="card-body">
+                        <div class="tip-icon" style="background: {{ tip.get_category_color }}; color: white;">
+                            <i class="fas fa-{{ tip.get_category_icon }}"></i>
+                        </div>
+                        <h5 class="card-title text-center mb-3">{{ tip.title }}</h5>
+                        <p class="card-text text-muted">{{ tip.description|truncatewords:20 }}</p>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="category-badge" style="background: {{ tip.get_category_color }}; color: white;">
+                                {{ tip.category|title }}
+                            </span>
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> {{ tip.duration_minutes }} min
+                            </small>
+                        </div>
+                        <div class="mb-3">
+                            <small class="text-muted">Best for:</small><br>
+                            <span class="badge bg-secondary">{{ tip.emotion_target|title }}</span>
+                        </div>
+                        <div class="d-grid">
+                            <button class="btn btn-primary btn-sm" onclick="startTip(event, {{ tip.id }}, '{{ tip.title }}')">
+                                <i class="fas fa-play"></i> Start Activity
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="text-center py-5">
+                    <i class="fas fa-lightbulb fa-4x text-muted mb-3"></i>
+                    <h4 class="text-muted">No wellness tips available yet</h4>
+                    <p class="text-muted">Check back soon for personalized recommendations!</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Personalized Recommendations -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-star"></i> Recommended for You
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div id="personalized-tips">
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading recommendations...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tip Detail Modal -->
+<div class="modal fade" id="tipModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tipModalTitle">Wellness Tip</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="tipModalBody">
+                <!-- Content loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="startTipBtn">
+                    <i class="fas fa-play"></i> Start Activity
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterByCategory(category) {
+    // Update active button
+    document.querySelectorAll('[data-category]').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Filter tips
+    const tips = document.querySelectorAll('.tip-item');
+    tips.forEach(tip => {
+        if (category === 'all' || tip.dataset.category === category) {
+            tip.style.display = 'block';
+        } else {
+            tip.style.display = 'none';
+        }
+    });
+}
+
+function searchTips() {
+    const searchTerm = document.getElementById('search-tips').value.toLowerCase();
+    const tips = document.querySelectorAll('.tip-item');
+    
+    tips.forEach(tip => {
+        const title = tip.querySelector('.card-title').textContent.toLowerCase();
+        const description = tip.querySelector('.card-text').textContent.toLowerCase();
+        
+        if (title.includes(searchTerm) || description.includes(searchTerm)) {
+            tip.style.display = 'block';
+        } else {
+            tip.style.display = 'none';
+        }
+    });
+}
+
+function expandTip(tipId) {
+    fetch(`/chatbot/api/tip/${tipId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showTipModal(data.tip);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading tip:', error);
+        });
+}
+
+function showTipModal(tip) {
+    document.getElementById('tipModalTitle').textContent = tip.title;
+    
+    const modalBody = document.getElementById('tipModalBody');
+    modalBody.innerHTML = `
+        <div class="row">
+            <div class="col-md-8">
+                <h6>Description</h6>
+                <p>${tip.description}</p>
+                
+                <h6 class="mt-4">Instructions</h6>
+                <ol>
+                    ${tip.instructions.split('\n').map(step => `<li>${step}</li>`).join('')}
+                </ol>
+                
+                ${tip.benefits ? `
+                    <h6 class="mt-4">Benefits</h6>
+                    <ul>
+                        ${tip.benefits.split('\n').map(benefit => `<li>${benefit}</li>`).join('')}
+                    </ul>
+                ` : ''}
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6>Details</h6>
+                        <p class="mb-2">
+                            <strong>Category:</strong><br>
+                            <span class="badge bg-primary">${tip.category}</span>
+                        </p>
+                        <p class="mb-2">
+                            <strong>Duration:</strong><br>
+                            ${tip.duration_minutes} minutes
+                        </p>
+                        <p class="mb-2">
+                            <strong>Best for:</strong><br>
+                            <span class="badge bg-secondary">${tip.emotion_target}</span>
+                        </p>
+                        <p class="mb-0">
+                            <strong>Difficulty:</strong><br>
+                            ${tip.difficulty || 'Easy'}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('startTipBtn').onclick = () => {
+        startTip(null, tip.id, tip.title);
+    };
+    
+    const modal = new bootstrap.Modal(document.getElementById('tipModal'));
+    modal.show();
+}
+
+function startTip(event, tipId, title) {
+    if (event) {
+        event.stopPropagation();
+    }
+    
+    // Log activity
+    fetch('/chatbot/api/log-activity/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            type: 'wellness_tip',
+            text: title,
+            tip_id: tipId,
+            completed: false
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            showNotification('Activity Started!', `You've started: ${title}. Take your time and enjoy!`, 'success');
+            
+            // Start timer
+            startActivityTimer(tipId, title);
+        }
+    })
+    .catch(error => {
+        console.error('Error starting activity:', error);
+    });
+}
+
+function startActivityTimer(tipId, title) {
+    // Create timer overlay
+    const overlay = document.createElement('div');
+    overlay.id = 'activity-timer';
+    overlay.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        z-index: 9998;
+        min-width: 250px;
+    `;
+    
+    overlay.innerHTML = `
+        <h6>${title}</h6>
+        <div class="text-center my-3">
+            <div class="display-4" id="timer-display">00:00</div>
+        </div>
+        <div class="d-grid gap-2">
+            <button class="btn btn-success btn-sm" onclick="completeActivity(${tipId}, '${title}')">
+                <i class="fas fa-check"></i> Complete
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="cancelActivity()">
+                Cancel
+            </button>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Start timer
+    let seconds = 0;
+    window.activityTimer = setInterval(() => {
+        seconds++;
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        document.getElementById('timer-display').textContent = 
+            `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }, 1000);
+}
+
+function completeActivity(tipId, title) {
+    clearInterval(window.activityTimer);
+    document.getElementById('activity-timer').remove();
+    
+    // Log completion
+    fetch('/chatbot/api/log-activity/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            type: 'wellness_tip',
+            text: title,
+            tip_id: tipId,
+            completed: true
+        })
+    })
+    .then(() => {
+        showNotification('Great Job!', `You've completed: ${title}. Keep up the good work!`, 'success');
+    });
+}
+
+function cancelActivity() {
+    clearInterval(window.activityTimer);
+    document.getElementById('activity-timer').remove();
+}
+
+function showNotification(title, message, type) {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} alert-dismissible fade show`;
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        min-width: 300px;
+    `;
+    toast.innerHTML = `
+        <strong>${title}</strong><br>${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 5000);
+}
+
+function loadPersonalizedTips() {
+    fetch('/chatbot/api/latest-emotion/')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                return fetch(`/chatbot/api/recommendations/?emotion=${data.emotion}`);
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayPersonalizedTips(data.recommendations);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading personalized tips:', error);
+            document.getElementById('personalized-tips').innerHTML = 
+                '<p class="text-center text-muted">Unable to load personalized recommendations</p>';
+        });
+}
+
+function displayPersonalizedTips(recommendations) {
+    const container = document.getElementById('personalized-tips');
+    
+    if (recommendations.length === 0) {
+        container.innerHTML = '<p class="text-center text-muted">No personalized recommendations available</p>';
+        return;
+    }
+    
+    let html = '<div class="row">';
+    recommendations.slice(0, 3).forEach(rec => {
+        html += `
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h6 class="card-title">
+                            <i class="fas fa-star text-warning"></i> ${rec.title}
+                        </h6>
+                        <p class="card-text">${rec.description}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">
+                                <i class="fas fa-clock"></i> ${rec.duration} min
+                            </small>
+                            <button class="btn btn-sm btn-primary" onclick="startTip(null, ${rec.id}, '${rec.title}')">
+                                Start
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    container.innerHTML = html;
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Load personalized tips on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadPersonalizedTips();
+});
+</script>
+{% endblock %}

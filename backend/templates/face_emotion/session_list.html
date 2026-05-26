@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detection Sessions - Face Emotion Recognition{% endblock %}
+
+{% block extra_css %}
+<style>
+    .sessions-container {
+        max-width: 1200px;
+        margin: 40px auto;
+        padding: 30px;
+    }
+    
+    .session-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+        padding: 25px;
+        transition: transform 0.3s ease;
+    }
+    
+    .session-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    
+    .session-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f8f9fa;
+    }
+    
+    .session-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .session-status {
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+    }
+    
+    .status-active {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-completed {
+        background: #cce5ff;
+        color: #004085;
+    }
+    
+    .session-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+    }
+    
+    .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #667eea;
+    }
+    
+    .stat-label {
+        font-size: 12px;
+        color: #6c757d;
+        margin-top: 5px;
+    }
+    
+    .emotion-distribution {
+        margin-top: 20px;
+    }
+    
+    .emotion-bar {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .emotion-label {
+        width: 100px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    
+    .emotion-progress {
+        flex: 1;
+        height: 24px;
+        background: #e9ecef;
+        border-radius: 12px;
+        overflow: hidden;
+        margin: 0 10px;
+    }
+    
+    .emotion-progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        transition: width 0.3s ease;
+    }
+    
+    .emotion-count {
+        width: 50px;
+        text-align: right;
+        font-weight: 600;
+        color: #495057;
+    }
+    
+    .session-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .empty-state i {
+        font-size: 64px;
+        color: #dee2e6;
+        margin-bottom: 20px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container sessions-container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-video"></i> Detection Sessions
+        </h2>
+        <a href="{% url 'face_emotion:realtime_detection' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Start New Session
+        </a>
+    </div>
+    
+    {% if sessions %}
+        {% for session in sessions %}
+            <div class="session-card">
+                <div class="session-header">
+                    <div class="session-title">
+                        <i class="fas fa-calendar-alt"></i>
+                        Session #{{ session.id }}
+                    </div>
+                    <span class="session-status {% if session.is_active %}status-active{% else %}status-completed{% endif %}">
+                        {% if session.is_active %}
+                            <i class="fas fa-circle"></i> Active
+                        {% else %}
+                            <i class="fas fa-check-circle"></i> Completed
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <div class="session-stats">
+                    <div class="stat-item">
+                        <div class="stat-value">{{ session.frame_count }}</div>
+                        <div class="stat-label">Frames Processed</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ session.face_count }}</div>
+                        <div class="stat-label">Faces Detected</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ session.avg_confidence|floatformat:1 }}%</div>
+                        <div class="stat-label">Avg Confidence</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">{{ session.duration_minutes|floatformat:1 }}m</div>
+                        <div class="stat-label">Duration</div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <small class="text-muted">
+                        <i class="fas fa-clock"></i> Started: {{ session.start_time|date:"M d, Y H:i" }}
+                    </small>
+                    {% if session.end_time %}
+                        <small class="text-muted ms-3">
+                            <i class="fas fa-flag-checkered"></i> Ended: {{ session.end_time|date:"M d, Y H:i" }}
+                        </small>
+                    {% endif %}
+                </div>
+                
+                {% if session.emotion_distribution %}
+                    <div class="emotion-distribution">
+                        <h6><i class="fas fa-chart-bar"></i> Emotion Distribution</h6>
+                        {% for emotion, count in session.emotion_distribution.items %}
+                            <div class="emotion-bar">
+                                <div class="emotion-label">{{ emotion|title }}</div>
+                                <div class="emotion-progress">
+                                    <div class="emotion-progress-fill" 
+                                         style="width: {{ count|floatformat:0 }}%"></div>
+                                </div>
+                                <div class="emotion-count">{{ count|floatformat:0 }}%</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+                
+                {% if session.notes %}
+                    <div class="mt-3">
+                        <strong><i class="fas fa-sticky-note"></i> Notes:</strong>
+                        <p class="text-muted mb-0">{{ session.notes }}</p>
+                    </div>
+                {% endif %}
+                
+                <div class="session-actions">
+                    <a href="{% url 'face_emotion:session_detail' session.id %}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-eye"></i> View Details
+                    </a>
+                    {% if session.is_active %}
+                        <button class="btn btn-sm btn-outline-danger" onclick="endSession({{ session.id }})">
+                            <i class="fas fa-stop"></i> End Session
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mt-4">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1">First</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                        </span>
+                    </li>
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Last</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    {% else %}
+        <div class="empty-state">
+            <i class="fas fa-video-slash"></i>
+            <h4>No Detection Sessions Yet</h4>
+            <p class="text-muted">Start a real-time detection session to track emotions over time.</p>
+            <a href="{% url 'face_emotion:realtime_detection' %}" class="btn btn-primary mt-3">
+                <i class="fas fa-play"></i> Start First Session
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function endSession(sessionId) {
+    if (confirm('Are you sure you want to end this session?')) {
+        fetch(`/face-emotion/api/end-session/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ session_id: sessionId })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error ending session: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to end session');
+        });
+    }
+}
+</script>
+{% endblock %}
